@@ -27,16 +27,31 @@ end
 % end
 % fprintf('Finished\n');
 
+if isfield(model1,'description')
+    model1Name = model1.description;
+else
+    model1Name = inputname(1);
+end
+    
+if isfield(model2,'description')
+    model2Name = model2.description;
+else
+    model2Name = inputname(2);
+end
+    
+fprintf('\nCombining models "%s" and "%s" ...',model1Name,model2Name)
+
 % Combining Reaction List
-fprintf('Combining reaction lists: ');
+fprintf('\nCombining reaction lists: ');
 modelNew.rxns = model1.rxns;
 modelNew.rxns(size(model1.rxns,1)+1:size(model1.rxns,1)+size(model2.rxns,1),1) = model2.rxns;
 lengthreaction = size(modelNew.rxns,1);
-fprintf('Finished, %i Distinct Reactions\n',lengthreaction);
+totalReactionCount = length(model1.rxns) + length(model2.rxns);
+fprintf('Finished, %i distinct reactions (from %i total reactions)\n',lengthreaction,totalReactionCount);
 
 % Combining Metabolite List
 fprintf('Combining metabolite lists: ');
-h = waitbar(0, 'Combining Metabolites in Progress ...');
+h = waitbar(0, 'Combining metabolites in progress ...');
 modelNew.mets = model1.mets;
 
 sizemets = size(modelNew.mets,1)+1;
@@ -61,7 +76,8 @@ end
 
 lengthmet = size(modelNew.mets,1);
 close(h);
-fprintf('Finished, %i Distinct Metabolites\n',lengthmet);
+totalMetaboliteCount = length(model1.mets) + length(model2.mets);
+fprintf('Finished, %i distinct metabolites (from %i separate metabolites)\n',lengthmet,totalMetaboliteCount);
 
 
 % Combining lb List
@@ -164,8 +180,8 @@ for i = 1:length(model2.genes)
 end
 fprintf('Finished\n');
 
-fprintf('Combining Remaining Genetic Information: ');
-h = waitbar(0, 'Combining Genetic Info ...');
+fprintf('Combining remaining genetic information: ');
+h = waitbar(0, 'Combining genetic info ...');
 modelNew.rxnGeneMat = model1.rxnGeneMat;
 % for i = 1:size(model2.rxnGeneMat,1)
 %     G = find(model2.rxnGeneMat(i,:));
