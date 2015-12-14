@@ -167,7 +167,7 @@ for i = 1:length(rxnAbbrList);
                 formulaStr = [formulaStr prodMets{j} ' '];
             end
         end
-        if (printFlag) & 0
+        if (printFlag) && 0
             fprintf('\t.');
         end
         
@@ -177,7 +177,7 @@ for i = 1:length(rxnAbbrList);
         end
         formulaStr = 'NA';
     end
-    if printFlag & gprFlag
+    if printFlag && gprFlag
         if (rxnID > 0) && (isfield(model,'grRules'))
             if (isempty(model.grRules{rxnID}))
                 fprintf('\t');
@@ -187,7 +187,7 @@ for i = 1:length(rxnAbbrList);
         end
 
     end    
-    if (lineChangeFlag)
+    if (lineChangeFlag) && printFlag
         fprintf(fid,'\n');
     end    
     formulas{i} = formulaStr;
