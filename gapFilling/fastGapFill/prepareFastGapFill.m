@@ -54,7 +54,7 @@ if ~exist('listCompartments','var') || isempty(listCompartments)
     listCompartments = unique(rem);
 end
 
-if ~exist('Filename','var') || isempty(Filename)
+if ~exist('filename','var') || isempty(filename)
     % KEGG reaction list
     filename = 'reaction.lst';
 end
@@ -68,12 +68,17 @@ end
 
 if regexp(dictionary_file,'.xls$')
     [~,dictionary,~] = xlsread(dictionary_file);
+    try
+        dictionary{:,1} = lower(dictionary{:,1});
+    catch
+        fprintf('xls dictionary was not converted to lower case ...\n')
+    end
 elseif regexp(dictionary_file,'.tsv$')
     file_handle = fopen(dictionary_file);
     u = textscan(file_handle,'%s\t%s');
     dictionary = {};
     for i = 1:length(u{1})
-        dictionary{i,1} = u{1}{i};
+        dictionary{i,1} = lower(u{1}{i});
         dictionary{i,2} = u{2}{i};
     end
     fclose(file_handle);
