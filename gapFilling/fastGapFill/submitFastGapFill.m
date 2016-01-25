@@ -1,4 +1,4 @@
-function [AddedRxns] = submitFastGapFill(inputsFile,modelFileIn,dbFileIn,dictionaryFileIn,workspaceFileIn,forceRerun)
+function [AddedRxns] = submitFastGapFill(inputsFile,modelFileIn,dbFileIn,dictionaryFileIn,workspaceFileIn,weightsPerRxnFile,forceRerun,epsilon)
 %% function [AddedRxns] = submitFastGapFill(modelFile,dbFile,dictionaryFile,workspaceFile,paramsFile)
 % William Bryant, Jan 2016
 %
@@ -46,20 +46,10 @@ else
     end
 end
 
+if ~exist('forceRerun','var') || isempty(forceRerun)
+    forceRerun=false;
+end
 
-% baseDirectory = '/Users/wbryant/work/BTH/analysis/fastGapFill/defaults/';
-% inputDir = 'input/';
-% modelFile = strcat(baseDirectory,inputDir,'BTH_iAH991_w_gprs.xml');
-% dbFile = strcat(baseDirectory,inputDir,'reaction.lst');
-% dictionaryFile = strcat(baseDirectory,inputDir,'KEGG_dictionary.xls');
-% workspaceFile = strcat(baseDirectory,'output/','default_out.mat');
-
-
-
-
-forceRerun=true;
-   
-oldDirectory = cd(baseDirectory);
 epsilon = [];
 
 % If workspaceFile is present, check for all variables; if consistModel, 
@@ -75,7 +65,7 @@ end
 length_a = length(fieldnames(a));
 clear a;
 if (length_a == 5) && ~forceRerun
-    fprintf('prepareGapFill already run, proceed with run.\n');
+    fprintf('prepareGapFill already run, and forceRerun set to "false", prepareGapFill will not be rerun\n');
 else
 % load model using relevant load function
     if regexp(modelFile,'.mat$')
@@ -132,9 +122,15 @@ else
     prepStats{cnt,2} = tpre;cnt = cnt+1;
     
     % Save data then clear all except required variables
-    save(workspaceFile,'consistModel','consistMatricesSUX','BlockedRxns','prepStats','model','baseDirectory');
-    cd(oldDirectory);
-    clear
+    save(workspaceFile,'consistModel','consistMatricesSUX','BlockedRxns','prepStats','model');
+    fprintf('prepareGapFill finished\n')
+end
+
+
+prompt='Proceed with fastGapFill? [y]/n: ';
+str = input(prompt,'s');
+if ~isempty(str) && (str == 'n')
+    return
 end
 
 fprintf('Running fastGapFill ...\n')
@@ -145,19 +141,25 @@ fprintf('Running fastGapFill ...\n')
 %% Define runs
 % WARNING: weights should not be 1, as this impacts on the algorithm
 % performance
+if ~exist('epsilon','var') || isempty(epsilon)
+    epsilon=1e-4;
+end
 
+if ~exist('weightsPerRxnFile','var') || isempty(weightsPerRxnFile)
+    weightsPerRxnFile='';
+end
 runs = {};
 
-%% RUN 1 
-run.weightsPerReactionFile = 'metabolonWeightedRxns.tsv';
+% RUN 1 
+run.weightsPerReactionFile = weightsPerRxnFile;
 run.weights.MetabolicRxns = 0.1; % Kegg metabolic reactions
 run.weights.ExchangeRxns = 0.5; % Exchange reactions
 run.weights.TransportRxns = 10; % Transport reactions
 run.name = 'initial';
 runs = [runs; run];
 
-%% RUN 2
-run.weightsPerReactionFile = 'metabolonWeightedRxns.tsv';
+% RUN 2
+run.weightsPerReactionFile = weightsPerRxnFile;
 run.weights.MetabolicRxns = 0.1; % Kegg metabolic reactions
 run.weights.ExchangeRxns = 0.9; % Exchange reactions
 run.weights.TransportRxns = 40; % Transport reactions
@@ -166,16 +168,7 @@ runs = [runs; run];
 
 clear run
 
-%% Do not change below here
-% Prepare the output table with statistics
-% Stats{cnt,1} = 'Model name';cnt = cnt+1;
-% Stats{cnt,1} = 'Size S (original model)';cnt = cnt+1;
-% Stats{cnt,1} = 'Number of compartments';cnt = cnt+1;
-% Stats{cnt,1} = 'List of compartments';cnt = cnt+1;
-% Stats{cnt,1} = 'Number of blocked reactions';cnt = cnt+1;
-% Stats{cnt,1} = 'Number of solvable blocked reactions';cnt = cnt+1;
-% Stats{cnt,1} = 'Size S (flux consistent)';cnt = cnt+1;
-% Stats{cnt,1} = 'Size SUX (including solvable blocked reactions)';cnt = cnt+1;
+%% Run fastGapFill
 
 cnt = 1;
 clear Stats;
@@ -187,45 +180,43 @@ Stats{cnt,1} = 'Number of added exchange reactions ';cnt = cnt+1;
 Stats{cnt,1} = 'Time fastGapFill';cnt = cnt+1;
 Stats{cnt,1} = 'SFilename';cnt = cnt+1;
 
-workspaceFile = '/Users/wbryant/work/BTH/analysis/fastGapFill/iAH991/output/iAHPrepared.mat';
-a = load(workspaceFile,'consistModel','consistMatricesSUX','BlockedRxns','model','baseDirectory');
-length_a = length(fieldnames(a));
-clear a;
-if length_a == 5
-    load(workspaceFile,'consistModel','consistMatricesSUX','BlockedRxns','model','baseDirectory');
-    fprintf('Variables loaded from .mat file ...\n');
-    oldDirectory = cd(baseDirectory);
-    b = load(workspaceFile,'prepStats');
-    if isempty(b)
+try
+    a = load(workspaceFile,'consistModel','consistMatricesSUX','BlockedRxns','model');
+    assert(length(fieldnames(a)) == 4);
+    clear a;
+    load(workspaceFile,'consistModel','consistMatricesSUX','BlockedRxns','model');
+    fprintf('Variables loaded from .mat file\n');
+    try
+        b = load(workspaceFile,'prepStats');
+        assert(~isempty(b))
         load(workspaceFile,'prepStats');
-        fprintf('Warning: no stats for prepareFastGapfill ...');
+        clear b;
+    catch
+        fprintf('Warning: no stats for prepareFastGapfill\n');
     end
-    clear b
-else
-    fprintf('prepareFGF must be run first ...')
-    return
+catch
+    fprintf('Using preloaded variables for fastGapFill\n')
 end
 
+% [~,rxnSides] = regexp(rxnFormula,'(.+)<=+(.+)','match','tokens');
+wkspFolder = regexp(workspace,'(.+/)[^/]+$','tokens');
 
-baseDirectory=strcat(baseDirectory,'/');
 
-for i = 1:length(runs)
-    
-     
+
+for i = 1:length(runs) 
     run_idx = i+1;
     fprintf('\nRun %i (%s)\n',i,runs{i}.name);
     weights = runs{i}.weights;
     weightsPerReactionFile = runs{i}.weightsPerReactionFile;
-    SFilename = strcat('output/results_',runs{i}.name,'.mat');
+    SFilename = strcat(wkspFolder,'results_',runs{i}.name,'.mat');
 
     % If specified, import weights from weights file (tsv)
     if ~isempty(weightsPerReactionFile)
-        weightsPerReactionFullPath = strcat(baseDirectory,'input/',weightsPerReactionFile);
-        file_handle = fopen(weightsPerReactionFullPath);
+         file_handle = fopen(weightsPerReactionFile);
         try
             u = textscan(file_handle,'%s\t%s');
         catch
-            fprintf('File "%s" could not be found, exiting.\n',weightsPerReactionFullPath)
+            fprintf('File "%s" could not be found, exiting\n',weightsPerReactionFile)
             return
         end
         weightsPerReaction.rxns = {};
@@ -239,25 +230,19 @@ for i = 1:length(runs)
         weightsPerReaction = [];
     end
     
-
     cnt = 1;
-%     cnt
-%     run_idx
-%     i
-%     runs{i}
-%     runs{i}.name
     Stats{cnt,run_idx} = runs{i}.name;cnt = cnt+1;
+    
     % fastGapFill
-    epsilon = 1e-4;
-    tic; [AddedRxns] = fastGapFill(consistMatricesSUX,epsilon,weights,weightsPerReaction);
+    tic; 
+    [AddedRxns] = fastGapFill(consistMatricesSUX,epsilon,weights,weightsPerReaction);
     tgap=toc;
     Stats{cnt,run_idx} = num2str(length(AddedRxns.rxns));cnt = cnt+1;
     save(SFilename);
 
     % Postprocessing
     [AddedRxnsExtended] = postProcessGapFillSolutions(AddedRxns,model,BlockedRxns,0);
-    %clear AddedRxns;
-
+    
     Stats{cnt,run_idx} = num2str(AddedRxnsExtended.Stats.metabolicSol);cnt = cnt+1;
     Stats{cnt,run_idx} = num2str(AddedRxnsExtended.Stats.transportSol);cnt = cnt+1;
     Stats{cnt,run_idx} = num2str(AddedRxnsExtended.Stats.exchangeSol);cnt = cnt+1;
@@ -273,17 +258,7 @@ for i = 1:length(runs)
     RxnList{1,col}=SFilename;RxnList(2:length(AddedRxnsExtended.rxns)+1,col) = AddedRxnsExtended.subSystem; col = col + 1;
 
     save(SFilename);
-    
-%     [m,n] = size(Stats);
-%     fprintf('Stats are %ix%i (rows x columns)\n',m,n)
-    
-%     for j = 1:m
-%         fprintf('%s: %f\n',Stats{j,1},Stats{j,run_idx});
-%     end
-
 end
     
 %% Clean up
-
-cd(oldDirectory)
 clear run_directory model_file db_file dictionary_file;
