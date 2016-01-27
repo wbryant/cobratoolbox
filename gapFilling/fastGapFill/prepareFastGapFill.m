@@ -50,7 +50,7 @@ if ~exist('epsilon','var') || isempty(epsilon)
 end
 
 if ~exist('listCompartments','var') || isempty(listCompartments)
- [tok,rem] = strtok(model.mets,'\[');
+ [~,rem] = strtok(model.mets,'\[');
     listCompartments = unique(rem);
 end
 
@@ -105,6 +105,14 @@ A = fastcc(MatricesSUX, epsilon);
 %setdiff(MatricesSUX.rxns,consistRxns)
 %consistMatricesSUX = extractSubNetwork(MatricesSUX,consistRxnsSUX);
 inconsistRxnsSUX = setdiff(MatricesSUX.rxns,MatricesSUX.rxns(A));
+
+
+[isValidRxn,removeInd] = ismember(inconsistRxnsSUX,MatricesSUX.rxns);
+removeInd = removeInd(isValidRxn);
+selectRxns = (ones(length(MatricesSUX.rxns),1) == 1);
+selectRxns(removeInd) = false;
+MatricesSUX.MatrixPart = MatricesSUX.MatrixPart(selectRxns);
+
 MatricesSUX = removeRxns(MatricesSUX,inconsistRxnsSUX);
 
 % now we need to add the reactions that we are currently blocked
@@ -114,8 +122,13 @@ rxnFormulas = printRxnFormula(model,inconsistRxns,false);
 %consistMatricesSUXextended = consistMatricesSUX;
 [a,b] = size(MatricesSUX.S);
 
+numRxnsCurrent = length(MatricesSUX.rxns);
 for i = 1 : length(rxnFormulas)
     MatricesSUX = addReaction(MatricesSUX,char(inconsistRxns(i)),char(rxnFormulas(i)));
+    if length(MatricesSUX.rxns) > numRxnsCurrent
+        numRxnsCurrent = length(MatricesSUX.rxns);
+        MatricesSUX.MatrixPart(numRxnsCurrent) = 1; %Ensure MatricesPart is up-to-date with model
+    end
 end
 
 % eliminate deadend metabolites and associated reactions from consistMatricesSUXextended
@@ -162,6 +175,8 @@ while m == 0
     MatricesSUX.rules(NullRxns==1)=[];
     MatricesSUX.grRules(NullRxns==1)=[];
     MatricesSUX.c(NullRxns==1)=[];
+    MatricesSUX.MatrixPart(NullRxns==1)=[];
+    MatricesSUX.rxnGeneMat(NullRxns==1,:)=[];
 end
 
 % recheck flux consistency
@@ -169,6 +184,9 @@ A = fastcc(MatricesSUX, epsilon);
 
 consistRxnsModel = MatricesSUX.rxns(A);
 inconsistRxnsSUXprime = setdiff(MatricesSUX.rxns,consistRxnsModel);
+[isValidRxn,removeInd] = ismember(inconsistRxnsSUXprime,MatricesSUX.rxns);
+removeInd = removeInd(isValidRxn);
+MatricesSUX.MatrixPart(removeInd) = [];
 MatricesSUX = removeRxns(MatricesSUX,inconsistRxnsSUXprime);
 
 % define Core reaction set
