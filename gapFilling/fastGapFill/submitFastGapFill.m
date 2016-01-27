@@ -1,19 +1,54 @@
-function [AddedRxns] = submitFastGapFill(inputsFile,modelFileIn,dbFileIn,dictionaryFileIn,workspaceFileIn,weightsPerRxnFile,forceRerun,epsilon)
+function [AddedRxns] = submitFastGapFill(inputsFile,modelFileIn,dbFileIn,dictionaryFileIn,workspaceFileIn,weightsPerRxnFile,forceRerun,epsilon,blackList)
 %% function [AddedRxns] = submitFastGapFill(modelFile,dbFile,dictionaryFile,workspaceFile,paramsFile)
-% William Bryant, Jan 2016
 %
+% A convenience function for running both prepareFastGapFill and
+% fastGapFill, allowing all files to be optionally specified and not 
+% requiring prepareFastGapFill to be rerun (if relevant variables are saved
+% in a specified workspace file) if it has already been run.
+%
+% This function performs two runs of fastGapFill, with weights as specified
+% in the 'Define Runs' section of the code.  The 'runs' variable can be
+% appended to or changed to enable the running of fastGapFill for different
+% combinations of weights (and different weightsPerRxnFile files).
+%
+% INPUT (ALL optional, defaults to E. coli model iAF1260 and example files)
+% inputsFile          .tsv file containing input file locations (can be used 
+%                        instead of specifying input files in function call)
+% modelFileIn         File containing model, either .mat or .xml
+% dbFileIn            File containing universal database
+% dictionaryFileIn    File containing db metabolite IDs and model
+%                        counterparts, either .xls or .tsv
+% workspaceFileIn     File for storing prepareFastGapFill results 
+%                        (default: examples/defaultWorkspace.mat)
+% weightsPerRxnFile   File containing individual weights for reactions 
+%                        (default: empty)
+% forceRerun          Rerun prepareFastGapFill even if it has already been run?
+%                        (default: false)
+% epsilon             fastCore parameter (default: 1e-4)
+% blackList           List of excluded universal DB reactions 
+%                        (default: none)
+%
+% OUTPUT
+% AddedRxns           Reactions that have been added from UX matrix to S
+%
+% Jan 2016
+% Will Bryant
 
 
 %% Preparation - load data
 
-% Suppress load warnings and deal with in the script
+% Suppress load warnings and deal with in the function
 warning('off','MATLAB:load:variableNotFound')
 
 % Default files
-modelFile = '/Users/wbryant/work/BTH/analysis/fastGapFill/defaults/input/BTH_iAH991_w_gprs.xml';
-dbFile = '/Users/wbryant/work/BTH/analysis/fastGapFill/defaults/input/BTH_iAH991_w_gprs.xml';
-dictionaryFile = '/Users/wbryant/work/BTH/analysis/fastGapFill/defaults/input/BTH_iAH991_w_gprs.xml';
-workspaceFile = '/Users/wbryant/work/BTH/analysis/fastGapFill/defaults/input/BTH_iAH991_w_gprs.xml';
+runFile = which('submitFastGapFill');
+runDirCell = regexp(runFile,'(.+/)[^/]+$','tokens');
+runDir = runDirCell{1}{1};
+
+modelFile = strcat(runDir,'examples/iAF1260.mat');
+dbFile = strcat(runDir,'AuxillaryFiles/reaction.lst');
+dictionaryFile = strcat(runDir,'AuxillaryFiles/KEGG_dictionary.xls');
+workspaceFile = strcat(runDir,'examples/defaultWorkspace.mat');
 
 if exist('inputsFile','var') && ~isempty('inputsFile')
     %Get input filenames from inputsFile
@@ -50,7 +85,9 @@ if ~exist('forceRerun','var') || isempty(forceRerun)
     forceRerun=false;
 end
 
-epsilon = [];
+if ~exist('epsilon','var') || isempty(epsilon)
+    epsilon=1e-4;
+end
 
 % If workspaceFile is present, check for all variables; if consistModel, 
 % consistMatricesSUX and BlockedRxns are present, do not rerun 
@@ -121,7 +158,7 @@ else
     prepStats{cnt,2} = strcat(num2str(a),'x',num2str(b));cnt = cnt+1;
     prepStats{cnt,2} = tpre;cnt = cnt+1;
     
-    % Save data then clear all except required variables
+    % Save data
     save(workspaceFile,'consistModel','consistMatricesSUX','BlockedRxns','prepStats','model');
     fprintf('prepareGapFill finished\n')
 end
@@ -138,12 +175,10 @@ fprintf('Running fastGapFill ...\n')
 % higher the priority
 
 
-%% Define runs
+%% Define Runs
 % WARNING: weights should not be 1, as this impacts on the algorithm
 % performance
-if ~exist('epsilon','var') || isempty(epsilon)
-    epsilon=1e-4;
-end
+
 
 if ~exist('weightsPerRxnFile','var') || isempty(weightsPerRxnFile)
     weightsPerRxnFile='';
@@ -199,7 +234,7 @@ catch
 end
 
 % [~,rxnSides] = regexp(rxnFormula,'(.+)<=+(.+)','match','tokens');
-wkspFolder = regexp(workspace,'(.+/)[^/]+$','tokens');
+% wkspFolder = regexp(workspace,'(.+/)[^/]+$','tokens');
 
 
 
@@ -208,11 +243,11 @@ for i = 1:length(runs)
     fprintf('\nRun %i (%s)\n',i,runs{i}.name);
     weights = runs{i}.weights;
     weightsPerReactionFile = runs{i}.weightsPerReactionFile;
-    SFilename = strcat(wkspFolder,'results_',runs{i}.name,'.mat');
+    SFilename = strcat(runDir,'examples/results_',runs{i}.name,'.mat');
 
     % If specified, import weights from weights file (tsv)
     if ~isempty(weightsPerReactionFile)
-         file_handle = fopen(weightsPerReactionFile);
+        file_handle = fopen(weightsPerReactionFile);
         try
             u = textscan(file_handle,'%s\t%s');
         catch
