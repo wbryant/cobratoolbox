@@ -100,7 +100,7 @@ for i = 1: length(KEGGReactionList)
      end
     %if (mod(i,40) ==0), waitbar(i/length(KEGGReactionList),h), end
 end
-close(h);
+%close(h);
 KEGG.S=spalloc(length(KEGG.mets) + 2*length(KEGG.mets), length(KEGG.mets) + 2*length(KEGG.mets), length(KEGG.mets) + 2*length(KEGG.mets) );
 
 [KEGG] = addReactionGEM(KEGG,KEGG.rxns,KEGG.rxns,KEGG.rxnFormulas,ones(length(KEGG.rxns),1),-10000*ones(length(KEGG.rxns),1),10000*ones(length(KEGG.rxns),1),1);

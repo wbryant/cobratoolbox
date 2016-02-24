@@ -71,7 +71,7 @@ for i = 1:size(model2.mets,1)
 end
 
 lengthmet = size(modelNew.mets,1);
-close(h);
+%close(h);
 fprintf('Finished, %i Distinct Metabolites\n',lengthmet);
 
 
@@ -149,7 +149,7 @@ for i = 1:size(a1,1)
     modelNew.S(a1(i),b1(i)) = model1.S(a1(i),b1(i));
     if mod(i,40) == 0,waitbar(i/size(a1,1),h);end
 end
-close(h);
+%close(h);
 
 
 
@@ -232,7 +232,7 @@ for i = 1:size(model2.rxnGeneMat,1)
     end
     %if(mod(i, 40) == 0),waitbar(i/size(model2.rxnGeneMat,1),h);end
 end
-close(h);
+%close(h);
 end
 
 modelNew.grRules = model1.grRules;

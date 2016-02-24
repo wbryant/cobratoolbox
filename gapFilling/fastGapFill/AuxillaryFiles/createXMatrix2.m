@@ -229,4 +229,4 @@ for i=1:length(compounds)
 end
 
 ExchangeRxnMatrix.mets = ExchangeRxnMatrix.mets';
-close(h);
+%close(h);

@@ -126,4 +126,4 @@ for i=1:length(compounds)
     end
     %if(mod(i, 40) ==0),waitbar(i/length(compounds),h);end
 end
-close(h);
+%close(h);
