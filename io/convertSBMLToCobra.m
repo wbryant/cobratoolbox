@@ -64,7 +64,8 @@ for i = 1:nMetsTmp
                 chargeList= [chargeList modelSBML.species(i).charge];
                 
             catch ME
-                disp('error');
+                chargeList= [chargeList 0];
+                %disp('Charge error');
                 
             end
             
