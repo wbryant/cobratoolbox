@@ -112,7 +112,7 @@ sbmlModel = Model_addUnitDefinition(sbmlModel, tmp_unit_definition);
 %List to hold the compartment ids.
 the_compartments = {};
 %separate metabolite and compartment
-[tokens tmp_met_struct] = regexp(model.mets,'(?<met>.+)\[(?<comp>.+)\]|(?<met>.+)\((?<comp>.+)\)','tokens','names');
+[tokens tmp_met_struct] = regexp(model.mets,'(?<met>.+)\[(?<comp>.+)\]|(?<met>.+)\((?<comp>.+)\)|(?<met>.+)_(?<comp>[^_]+)$','tokens','names');
 
 for (i=1:size(model.mets, 1))
     tmp_notes='';

@@ -123,21 +123,21 @@ else
         model = readMlModel(modelFile);
     elseif regexp(modelFile,'.xml$')
         model = readCbModel(modelFile);
-        % If subSystems is empty, create a dummy subSystems for mergeTwoModels
-        if ~exist('model.subSystems') || length(model.subSystems) ~= length(model.rxnNames)
-            model.subSystems = repmat({''},length(model.rxnNames));
-        end
-        if ~exist('model.genes')
-            model.genes = repmat({'no_gene'},1);
-        end
-        if ~exist('model.rxnGeneMat')
-            model.rxnGeneMat = zeros(length(model.rxnNames),1);
-        end
-        if ~exist('model.grRules')
-            model.grRules = repmat({''},length(model.rxnNames));
-        end
     end
-    
+    % If subSystems is empty, create a dummy subSystems for mergeTwoModels
+    if ~exist('model.subSystems') || length(model.subSystems) ~= length(model.rxnNames)
+        model.subSystems = repmat({''},length(model.rxnNames),1);
+    end
+    if ~exist('model.genes')
+        model.genes = cell(0,1);
+    end
+    if ~exist('model.rxnGeneMat')
+        model.rxnGeneMat = zeros(length(model.rxnNames),0);
+    end
+    if ~exist('model.grRules')
+        model.grRules = repmat({''},length(model.rxnNames),1);
+    end
+        
     % remove constraints from exchange reactions
     EX = strncmp('EX_',model.rxns,3);
     model.lb(EX)=-100;
@@ -319,3 +319,21 @@ for i = 1:length(runs)
 
     save(resultsFile);
 end
+
+end
+
+% function [modelGapFilled] = exportResults(modelOrig, resultModelFile, AddedRxns)
+% 
+% modelGapFilled = modelOrig;
+% for i = 1:length(AddedRxns.rxns)
+%     rxnID = AddedRxns.rxns{i};
+%     rxnFormula = AddedRxns.rxnFormula{i};
+%     
+%     modelGapFilled = addReaction(modelGapFilled,rxnID,rxnFormula);
+% end
+% 
+% writeCbModel(modelGapFilled,'sbml',resultModelFile);
+% 
+% end
+
+

@@ -80,7 +80,7 @@ ExchangeRxnMatrix = createXMatrix2(modelExpanded.mets,1,'all');
 ExchangeRxnMatrix.RxnSubsystem = ExchangeRxnMatrix.subSystems;
 
 [MatricesSUX] = mergeTwoModels(modelExpanded,ExchangeRxnMatrix,1);
-MatricesSUX.rxnGeneMat(length(MatricesSUX.rxns),length(MatricesSUX.genes))=0;
+MatricesSUX.rxnGeneMat = zeros(length(MatricesSUX.rxns),length(MatricesSUX.genes));
 MatricesSUX.rxnGeneMat = sparse(MatricesSUX.rxnGeneMat);
 
 % MatrixPart indicates in which area of MatricesSUX the model reactions,

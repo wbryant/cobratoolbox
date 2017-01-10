@@ -134,7 +134,7 @@ for i = 1:length(rev)
             if useHashTable
                 c = HTABLE.get(parsing{j});
             else
-                c = strmatch(parsing{j},newmodel.mets,'exact');
+                c = find(strcmp(parsing{j},newmodel.mets));
                 %display('slow method')
             end
 %             c2 = strmatch(parsing{j},newmodel.mets,'exact');

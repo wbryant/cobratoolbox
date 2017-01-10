@@ -159,7 +159,7 @@ for i=1:length(compounds)
             elseif (strcmp(compartment,'all'))==1 % [m],[n],[g],[l],[x],[r]
                 % if compound(i) exists in a compartment than add a
                 % transport from [c] to compartment
-                comp = strmatch(compounds(i),compoundsInOri2,'exact');
+                comp = find(strcmp(compounds(i),compoundsInOri2));
                 if ~isempty(comp)
                     if exist('model','var')
                         % check if exchange reaction is already  in original model
